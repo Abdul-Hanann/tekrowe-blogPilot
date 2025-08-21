@@ -103,15 +103,28 @@ class AIPipelineService:
             if not blog:
                 return False
 
-            # Get topics from cache or generate new ones
-            if blog_id not in self.topics_cache:
-                print(f"ERROR: No cached topics found for blog {blog_id}")
-                print(f"This should not happen - topics should be generated first via /topics endpoint")
-                return False
-            else:
-                print(f"Using cached topics for blog {blog_id}")
+            # Get topics from database first, then fall back to cache
+            topics = None
+            if blog.generated_topics:
+                try:
+                    import json
+                    topics = json.loads(blog.generated_topics)
+                    print(f"Retrieved {len(topics)} topics from database for blog {blog_id}")
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing generated_topics from database: {e}")
+                    topics = None
+            
+            # If no topics in database, try cache
+            if not topics and blog_id in self.topics_cache:
                 topics = self.topics_cache[blog_id]
+                print(f"Using cached topics for blog {blog_id}")
                 print(f"Retrieved {len(topics)} cached topics")
+            
+            # If still no topics, we can't proceed
+            if not topics:
+                print(f"ERROR: No topics found for blog {blog_id} in database or cache")
+                print(f"Topics must be generated first via /topics endpoint")
+                return False
 
             # Debug: Print topics and selection
             print(f"Available topics count: {len(topics)}")
@@ -547,9 +560,9 @@ class AIPipelineService:
             return {"can_resume": False, "reason": f"Error: {str(e)}", "action_needed": None}
 
     def cleanup_abandoned_blogs(self) -> dict:
-        """Clean up blogs that have no topics and are abandoned"""
+        """Clean up blogs that have no topics generated - keep only records with topics and beyond"""
         try:
-            print("Starting cleanup of abandoned blogs...")
+            print("Starting cleanup of blogs with no topics generated...")
             
             # Get all blogs
             all_blogs = self.blog_service.get_all_blogs()
@@ -557,27 +570,32 @@ class AIPipelineService:
             preserved_count = 0
             
             for blog in all_blogs:
-                # Only delete blogs that are truly abandoned:
-                # - pending status AND no generated topics AND no selected topic
-                # - OR failed status with no generated topics and no selected topic
-                should_delete = (
-                    (blog.status == 'pending' and not blog.generated_topics and not blog.selected_topic) or
-                    (blog.status == 'failed' and not blog.generated_topics and not blog.selected_topic)
-                )
+                # Delete blogs that have no topics generated:
+                # - Any status but no generated_topics field or empty generated_topics
+                has_topics = blog.generated_topics and blog.generated_topics.strip()
                 
-                if should_delete:
-                    print(f"Deleting abandoned blog {blog.id} (status: {blog.status}, no topics)")
-                    self.blog_service.delete_blog(blog.id)
-                    cleaned_count += 1
+                print(f"Blog {blog.id}: status={blog.status}, generated_topics={blog.generated_topics}, has_topics={has_topics}")
+                
+                if not has_topics:
+                    print(f"Deleting blog {blog.id} (status: {blog.status}, no topics generated)")
+                    try:
+                        success = self.blog_service.delete_blog(blog.id)
+                        if success:
+                            cleaned_count += 1
+                            print(f"✓ Successfully deleted blog {blog.id}")
+                        else:
+                            print(f"✗ Failed to delete blog {blog.id}")
+                    except Exception as e:
+                        print(f"✗ Error deleting blog {blog.id}: {e}")
                 else:
-                    print(f"Preserving blog {blog.id} (status: {blog.status}, has topics or content)")
+                    print(f"Preserving blog {blog.id} (status: {blog.status}, has topics generated)")
                     preserved_count += 1
             
-            print(f"Cleanup completed: {cleaned_count} abandoned blogs deleted, {preserved_count} preserved")
+            print(f"Cleanup completed: {cleaned_count} blogs with no topics deleted, {preserved_count} preserved")
             return {
                 "cleaned_count": cleaned_count,
                 "preserved_count": preserved_count,
-                "message": f"Cleaned up {cleaned_count} abandoned blogs"
+                "message": f"Cleaned up {cleaned_count} blogs with no topics generated"
             }
             
         except Exception as e:

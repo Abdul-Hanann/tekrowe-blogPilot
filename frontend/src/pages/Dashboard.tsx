@@ -21,18 +21,18 @@ export default function Dashboard() {
     },
   });
 
-  // Auto-cleanup abandoned blogs when dashboard loads (only once per session)
+  // Auto-cleanup blogs with no topics when dashboard loads (only once per session)
   useEffect(() => {
     const autoCleanup = async () => {
       try {
-        // Only cleanup if we have blogs and some might be abandoned
+        // Only cleanup if we have blogs and some might have no topics
         if (blogs && blogs.length > 0) {
-          const abandonedCount = blogs.filter(blog => 
-            blog.status === 'pending' && !blog.generated_topics && !blog.selected_topic
+          const noTopicsCount = blogs.filter(blog => 
+            !blog.generated_topics || !blog.generated_topics.trim()
           ).length;
           
-          if (abandonedCount > 0) {
-            console.log(`Found ${abandonedCount} potentially abandoned blogs, running cleanup...`);
+          if (noTopicsCount > 0) {
+            console.log(`Found ${noTopicsCount} blogs with no topics generated, running cleanup...`);
             await cleanupAbandonedBlogs();
           }
         }

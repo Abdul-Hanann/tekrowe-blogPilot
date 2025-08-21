@@ -231,7 +231,7 @@ async def get_blog_process_status(blog_id: int):
 
 @blog_router.post("/blogs/cleanup")
 async def cleanup_abandoned_blogs():
-    """Clean up abandoned blogs that have no topics"""
+    """Clean up blogs that have no topics generated - keep only records with topics and beyond"""
     try:
         cleanup_result = ai_pipeline.cleanup_abandoned_blogs()
         return cleanup_result

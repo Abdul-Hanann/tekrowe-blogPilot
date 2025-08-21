@@ -106,38 +106,46 @@ export default function BlogViewer() {
 
   const convertMarkdownToHTML = (markdown: string) => {
     return markdown
-      // Clean up numbered titles and formatting - more robust pattern
-      .replace(/^\d+\.\s*\*\*Title:\*\*\s*["""](.*?)["""]/gim, '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-6">$1</h1>')
-      .replace(/^\d+\.\s*\*\*Title:\*\*\s*(.*)/gim, '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-6">$1</h1>')
-      .replace(/^\d+\.\s*(.*)/gim, '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-6">$1</h1>')
+      // Handle section titles first
+      .replace(/<section_title>(.*?)<\/section_title>/g, '<h2 class="text-xl font-bold text-gray-900 mt-6 mb-4">$1</h2>')
+      .replace(/<subsection_title>(.*?)<\/subsection_title>/g, '<h3 class="text-lg font-semibold text-gray-900 mt-4 mb-3">$1</h3>')
+      
+      // Handle headers (must come before numbered lists)
+      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-gray-900 mt-6 mb-3">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-6">$1</h1>')
+      
+      // Handle numbered lists with bold text (like "1. **Machine Learning Algorithms**")
+      .replace(/^(\d+)\.\s*\*\*(.*?)\*\*:\s*(.*)/gim, '<h3 class="text-lg font-semibold text-gray-900 mt-6 mb-3">$1. $2</h3><p class="mb-4 leading-relaxed text-gray-700">$3</p>')
+      
+      // Handle numbered lists without bold text
+      .replace(/^(\d+)\.\s*(.*)/gim, '<h3 class="text-lg font-semibold text-gray-900 mt-6 mb-3">$1. $2</h3>')
+      
+      // Handle special title patterns (for topic generation)
       .replace(/^\*\*Title:\*\*\s*["""](.*?)["""]/gim, '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-6">$1</h1>')
       .replace(/^\*\*Title:\*\*\s*(.*)/gim, '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-6">$1</h1>')
       .replace(/^\*\*Summary:\*\*\s*(.*)/gim, '<h2 class="text-xl font-bold text-gray-900 mt-6 mb-4">Summary</h2><p class="mb-4 leading-relaxed text-gray-700">$1</p>')
       .replace(/^\*\*Suggested Angle:\*\*\s*(.*)/gim, '<h2 class="text-xl font-bold text-gray-900 mt-6 mb-4">Suggested Angle</h2><p class="mb-4 leading-relaxed text-gray-700">$1</p>')
       .replace(/^\*\*Intended Audience:\*\*\s*(.*)/gim, '<h2 class="text-xl font-bold text-gray-900 mt-6 mb-4">Intended Audience</h2><p class="mb-4 leading-relaxed text-gray-700">$1</p>')
       
-      // Handle section titles
-      .replace(/<section_title>(.*?)<\/section_title>/g, '<h2 class="text-xl font-bold text-gray-900 mt-6 mb-4">$1</h2>')
-      .replace(/<subsection_title>(.*?)<\/subsection_title>/g, '<h3 class="text-lg font-semibold text-gray-900 mt-4 mb-3">$1</h3>')
-      
-      // Standard markdown conversions
-      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-gray-900 mt-6 mb-3">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-6">$1</h1>')
+      // Handle inline formatting
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
       .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
       .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-2 py-1 rounded text-sm font-mono">$1</code>')
       
-      // Handle lists
+      // Handle bullet lists
       .replace(/^-\s*(.*)/gim, '<li class="mb-2 text-gray-700">$1</li>')
       .replace(/(<li.*<\/li>)/gs, '<ul class="list-disc pl-6 mb-4">$1</ul>')
       
-      // Handle paragraphs and line breaks
-      .replace(/\n\n/g, '</p><p class="mb-4 leading-relaxed text-gray-700">')
+      // Handle paragraphs and line breaks - more intelligent approach
+      .replace(/\n\n+/g, '</p><p class="mb-4 leading-relaxed text-gray-700">')
       .replace(/\n/g, '<br>')
-      .replace(/^<p/, '<p class="mb-4 leading-relaxed text-gray-700"')
       .replace(/^/, '<p class="mb-4 leading-relaxed text-gray-700">')
-      .replace(/$/, '</p>');
+      .replace(/$/, '</p>')
+      
+      // Clean up any empty paragraphs
+      .replace(/<p class="mb-4 leading-relaxed text-gray-700"><\/p>/g, '')
+      .replace(/<p class="mb-4 leading-relaxed text-gray-700"><br><\/p>/g, '');
   };
 
   const downloadAsDocx = async (content: string, filename: string) => {
@@ -254,7 +262,7 @@ export default function BlogViewer() {
 
   // Load existing topics if they exist in the database
   React.useEffect(() => {
-    if (blog && blog.generated_topics && blog.status === 'pending') {
+    if (blog && blog.generated_topics && (blog.status === 'pending' || blog.status === 'topic_generation')) {
       try {
         const parsedTopics = JSON.parse(blog.generated_topics);
         setTopics(parsedTopics);
@@ -627,7 +635,7 @@ export default function BlogViewer() {
                   ) : blog.status === 'pending' ? (
                     <p>Blog is pending. Generate topics to continue.</p>
                   ) : blog.status === 'topic_generation' ? (
-                    <p>Topics are being generated. Please wait or generate topics manually.</p>
+                    <p>Topics are ready! Select one to continue the blog generation.</p>
                   ) : (
                     <p>Blog generation is in progress. You can pause or resume as needed.</p>
                   )}
@@ -658,8 +666,30 @@ export default function BlogViewer() {
                 )}
                 
                 {blog.status === 'topic_generation' && (
-                  <div className="text-sm text-gray-500">
-                    Please wait for topics to be generated...
+                  <div className="flex items-center space-x-3">
+                    {topics.length === 0 ? (
+                      <button
+                        onClick={() => {
+                          // Load existing topics from the blog
+                          if (blog.generated_topics) {
+                            try {
+                              const parsedTopics = JSON.parse(blog.generated_topics);
+                              setTopics(parsedTopics);
+                            } catch (error) {
+                              console.error('Error parsing generated topics:', error);
+                            }
+                          }
+                        }}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Load Topics
+                      </button>
+                    ) : (
+                      <div className="text-sm text-green-600">
+                        ✓ {topics.length} topics ready for selection
+                      </div>
+                    )}
                   </div>
                 )}
                 
@@ -722,8 +752,8 @@ export default function BlogViewer() {
         </div>
       </div>
 
-      {/* Topic Selection for Pending Blogs */}
-      {blog.status === 'pending' && topics.length > 0 && (
+      {/* Topic Selection for Blogs with Topics */}
+      {((blog.status === 'pending' || blog.status === 'topic_generation') && topics.length > 0) && (
         <div className="bg-white shadow rounded-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Select a Topic</h2>
           <div className="space-y-4">

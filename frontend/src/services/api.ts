@@ -84,6 +84,7 @@ export const getBlogProcessStatus = async (blogId: number): Promise<{
   return response.data;
 };
 
+// Cleanup blogs that have no topics generated - keeps only records with topics and beyond
 export const cleanupAbandonedBlogs = async (): Promise<{
   cleaned_count: number;
   preserved_count: number;
