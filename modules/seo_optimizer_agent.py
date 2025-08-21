@@ -20,7 +20,7 @@ from docx.shared import Pt
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-llm = ChatOpenAI(model="gpt-4o", temperature=0.3, openai_api_key=OPENAI_API_KEY)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3, openai_api_key=OPENAI_API_KEY)
 
 INPUT_MD = "output/blog_edited.md"
 OUT_MD   = "output/blog_seo.md"

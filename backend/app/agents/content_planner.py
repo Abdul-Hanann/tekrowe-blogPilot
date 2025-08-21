@@ -1,4 +1,3 @@
-
 import os
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -7,21 +6,14 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.6, openai_api_key=OPENAI_API_KEY)
 
-def read_selected_topic():
-    path = "output/selected_topic.txt"
-    if not os.path.exists(path):
-        print("[!] selected_topic.txt not found.")
-        return None
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
-
-def generate_content_plan(selected_topic_text):
+def generate_content_plan(selected_topic_text: str) -> str:
+    """Generate a comprehensive content plan from the selected topic"""
     raw_content_planner_prompt = f"""
 <optimized_prompt>
     <role>You are a highly analytical and expert Technical Content Strategist. Your primary goal is to create detailed, profoundly researched, and extensive content plans for technical blogs that are exceptionally informative, practical, and engaging for a professional technical audience. You must ensure the plan explicitly outlines the deepest technical insights required, integrates compelling real-world examples and statistics, and strictly avoids any 'essay-like' or overly narrative structures.</role>
 
     <instructions>
-        <task>Given the blog topic provided in `selected_topic.txt`, generate a comprehensive, deeply researched, and extensive content plan. This plan must prioritize technical accuracy, practical application, and actionable insights, ensuring all key technical aspects are covered in profound depth. It must also incorporate relevant, impactful examples and verifiable statistics gathered through internet research.</task>
+        <task>Given the blog topic provided, generate a comprehensive, deeply researched, and extensive content plan. This plan must prioritize technical accuracy, practical application, and actionable insights, ensuring all key technical aspects are covered in profound depth. It must also incorporate relevant, impactful examples and verifiable statistics gathered through internet research.</task>
         
         <rules_for_technical_validity>
             1. All claims, statistics, and examples must be backed by **verifiable sources** — include source title, author/publisher, publish date, URL, and date accessed.
@@ -39,7 +31,7 @@ def generate_content_plan(selected_topic_text):
         </rules_for_technical_validity>
 
         <think_process>
-            <step>1. Read and thoroughly understand the blog topic from `selected_topic.txt`.</step>
+            <step>1. Read and thoroughly understand the blog topic provided.</step>
             <step>2. Conduct in-depth research using internet search tools on the core technical problem or concept. Gather comprehensive, up-to-date information, **relevant examples**, and **verifiable statistics** that can support and illustrate technical points effectively.</step>
             <step>3. Identify all key technical details, algorithms, architectures, datasets, evaluation methods, relevant technologies, and precise terminology that *must* be included. Ensure all are current and authoritative.</step>
             <step>4. Select specific, detailed, and compelling **real-world examples** and **case studies**. Include measurable benchmarks and performance data.</step>
@@ -92,20 +84,5 @@ def generate_content_plan(selected_topic_text):
 </optimized_prompt>
 """
 
-    return llm.invoke([{"role": "user", "content": raw_content_planner_prompt}]).content
-
-def run():
-    selected = read_selected_topic()
-    if not selected:
-        return
-    print("[~] Generating content plan...")
-    plan = generate_content_plan(selected)
-    os.makedirs("output", exist_ok=True)
-    out_path = "output/content_plan.txt"
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write("RESEARCHED CONTENT PLAN\n" + "=" * 60 + "\n\n")
-        f.write(plan)
-    print(f"[✓] Content plan saved to {out_path}")
-
-if __name__ == "__main__":
-    run()
+    result = llm.invoke([{"role": "user", "content": raw_content_planner_prompt}])
+    return result.content

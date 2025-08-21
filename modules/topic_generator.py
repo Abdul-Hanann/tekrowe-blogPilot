@@ -6,7 +6,7 @@ from langchain_community.tools import DuckDuckGoSearchRun
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-llm = ChatOpenAI(model="gpt-4o", temperature=0.7, openai_api_key=OPENAI_API_KEY)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, openai_api_key=OPENAI_API_KEY)
 search = DuckDuckGoSearchRun()
 
 def generate_trending_topics():

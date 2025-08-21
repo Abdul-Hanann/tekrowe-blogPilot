@@ -1,96 +1,109 @@
-# Blog Automation
+# AI Blog Automation - Full Stack Web Application
 
-An AI-powered multi-agent system for fully automated blog creation, from topic selection to SEO optimization. Built with LangChain, advanced LLMs, and web search tools.
+An AI-powered multi-agent system for fully automated blog creation, now with a modern web interface. Built with React frontend, FastAPI backend, LangChain, and advanced LLMs.
 
 ## Project Structure
 
 ```
 ai-blog-automation/
-├── module/
-│   ├── topic_agent.py          # Selects trending & relevant topics
-│   ├── content_planner.py      # Plans blog structure & gathers research
-│   ├── writer_agent.py         # Writes draft blog content
-│   ├── editor_agent.py         # Improves clarity, grammar, and flow
-│   ├── seo_optimizer.py        # SEO-optimizes titles, slugs, and metadata
-├── output/
-│   ├── topics.txt              # Generated topics
-│   ├── content_plan.txt        # Blog outline & sources
-│   ├── draft.md                # Raw drafted blog
-│   ├── clean.md                # Edited, final blog content
-│   ├── blog_seo.md             # SEO-optimized version
-│   ├── final_blog.docx         # Converts Markdown → DOCX
-├── main.py                     # Entry point to run automation pipeline
-├── .env.example                # Environment variables
-├── requirements.txt            # Python package dependencies
-├── README.md                   # Project documentation
-
+├── frontend/                 # React frontend application
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API service calls
+│   │   └── utils/          # Utility functions
+│   ├── public/             # Static assets
+│   └── package.json        # Frontend dependencies
+├── backend/                 # FastAPI backend application
+│   ├── app/
+│   │   ├── api/            # API routes
+│   │   ├── core/           # Core configuration
+│   │   ├── models/         # Data models
+│   │   ├── services/       # Business logic
+│   │   └── agents/         # AI agent modules
+│   ├── requirements.txt    # Python dependencies
+│   └── main.py            # FastAPI entry point
+├── shared/                  # Shared utilities and types
+└── docker-compose.yml      # Development environment setup
 ```
 
-## What this project does
+## Features
 
-The project runs a sequence of small agents located in `blog_automation/`:
+- **Web Interface**: Modern React frontend for easy blog creation
+- **AI Agents**: Automated topic generation, content planning, writing, editing, and SEO optimization
+- **Real-time Progress**: Track blog creation progress through the pipeline
+- **Content Management**: Save, edit, and manage multiple blog projects
+- **Export Options**: Download blogs in various formats (Markdown, DOCX, HTML)
 
-- `topic_generator.py` — gathers research and generates a list of topics, then lets you choose one.
-- `content_planner.py` — builds a detailed, research-backed content plan from the chosen topic.
-- `writer_agent.py` — produces an in-depth blog draft from the content plan using an LLM.
-- `editor_agent.py` — refines the draft into a clean final version.
-- `seo_optimizer_agent.py` — produces an optimized version of the blog for SEO.
+## Tech Stack
 
-The orchestrator is `main.py`, which runs those agents in sequence.
+### Frontend
+- **React 18** with TypeScript
+- **Tailwind CSS** for styling
+- **React Query** for API state management
+- **React Router** for navigation
 
-## Requirements
+### Backend
+- **FastAPI** with Python 3.10+
+- **LangChain** for AI agent orchestration
+- **OpenAI GPT-4** for content generation
+- **DuckDuckGo** for web research
+- **SQLAlchemy** for database management
 
-- Python 3.10+ recommended.
-- Internet access (agents call external LLM/search services).
-- An OpenAI-compatible API key (exported in `.env` as `OPENAI_API_KEY`).
+## Quick Start
 
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- OpenAI API key
 
-Note: this project imports `langchain_openai` and `langchain_community.tools.DuckDuckGoSearchRun` in the agent files. Depending on your environment you may need the respective packages or custom wrappers. If you use a virtual environment, install packages there.
+### Development Setup
 
-
-## How to Run (Local Setup)
-
+1. **Clone and setup environment**
 ```bash
-# Clone the repository
-git clone https://github.com/your-repo/ai-blog-automation.git
+git clone <your-repo>
 cd ai-blog-automation
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment variables
 cp .env.example .env
-nano .env  # Update API keys & settings
-
-# Run automation pipeline
-python main.py
-
+# Update .env with your OpenAI API key
 ```
 
-## Files produced
+2. **Start Backend**
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
 
-- `blog_automation/topics.txt` — structured topic list.
-- `blog_automation/selected_topic.txt` — the chosen topic block used for planning.
-- `blog_automation/content_plan.txt` — researched and structured content plan.
-- `blog_automation/blog_draft.md` — the generated draft blog post.
-- `blog_automation/blog_final.docx` — the final polished blog post.
+3. **Start Frontend**
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Environment & secrets
+4. **Access the application**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-- Use `.env` to store `OPENAI_API_KEY`.
-- Do not hardcode secrets in scripts.
-- If running CI, inject the key via secure environment variables rather than committing `.env`.
+## API Endpoints
 
-## Customization
+- `POST /api/blogs/create` - Start new blog creation
+- `GET /api/blogs/{id}` - Get blog status and content
+- `GET /api/blogs` - List all blogs
+- `DELETE /api/blogs/{id}` - Delete blog
 
-- Adjust model choice and temperature in the agent files where `ChatOpenAI` is instantiated (`topic_generator.py`, `content_planner.py`, `writer_agent.py`).
-- `main.py` controls which agents run. Uncomment `image_agent.py` in `AGENTS` when ready.
+## Environment Variables
 
-## Safety & copyright
+```env
+OPENAI_API_KEY=your_openai_api_key
+DATABASE_URL=sqlite:///./blog_automation.db
+CORS_ORIGINS=http://localhost:5173
+```
 
-- The writer prompt requests original content and instructs the model to include sources for factual claims. The agents rely on the external LLM for research and content; verify any legal/medical/financial claims before publication.
+## Development Notes
 
-## Development notes
-
-- The code uses simple subprocess orchestration in `main.py`. You can also run each agent individually for debugging, e.g.: `python blog_automation\content_planner.py`.
-- If you want to extend functionality (e.g., add a headless selection path), modify `topic_generator.py` to accept a CLI flag and write `selected_topic.txt` automatically.
+- The AI agents are now integrated into the FastAPI backend as services
+- Frontend provides real-time progress updates during blog creation
+- All blog data is stored in a database for persistence
+- Docker setup available for consistent development environment

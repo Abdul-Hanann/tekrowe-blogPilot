@@ -1,11 +1,4 @@
-
-
-"""
-Writer Agent – produces a deep, structured, technical blog from the plan
-"""
-
 import os
-import textwrap
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
@@ -13,15 +6,8 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, openai_api_key=OPENAI_API_KEY)
 
-def read_content_plan():
-    path = "output/content_plan.txt"
-    if not os.path.exists(path):
-        print("[!] content_plan.txt not found. Run the planner first.")
-        return None
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
-
 def generate_blog_draft(plan_text: str) -> str:
+    """Generate a comprehensive blog draft from the content plan"""
     raw_writer_agent_prompt = f"""
 <writer_prompt>
     <role>
@@ -40,13 +26,13 @@ def generate_blog_draft(plan_text: str) -> str:
         </task>
 
         <think_process>
-            <step>1. Understand the target audience’s technical proficiency and tailor explanations accordingly, providing profound deep dives into complex concepts.</step>
+            <step>1. Understand the target audience's technical proficiency and tailor explanations accordingly, providing profound deep dives into complex concepts.</step>
             <step>2. For each section of the content plan, extract the core technical message and decide how to present it most effectively and extensively.</step>
             <step>3. Ensure utmost clarity and precision in technical explanations. Use correct terminology and define it where necessary.</step>
             <step>4. Integrate detailed descriptions of concepts, practical scenarios, or described diagrams seamlessly to illustrate points, **without including actual code snippets or command-line interfaces.**</step>
             <step>5. Use a direct, problem-solution or how-to style. Avoid unnecessary storytelling or abstract discussion. Every section must contribute significant technical value and depth.</step>
             <step>6. Maintain logical flow between sections, building understanding step-by-step and ensuring a comprehensive narrative. **Ensure clear and concise subheadings are used throughout the blog post.**</step>
-            <step>7. **For every concrete claim (stat %, date, $, benchmark, company name, standard), attach a source with: title, publisher, author, URL, publish date (YYYY-MM-DD), and access date. If evidence is mixed, say ‘Evidence unclear’ and show both sides. Never invent sources.**</step>
+            <step>7. **For every concrete claim (stat %, date, $, benchmark, company name, standard), attach a source with: title, publisher, author, URL, publish date (YYYY-MM-DD), and access date. If evidence is mixed, say 'Evidence unclear' and show both sides. Never invent sources.**</step>
             <step>8. **If the topic is fast-moving (e.g., AI, security, policy, prices, product specs), include ≥3 reputable sources from the last 12 months. If historical, prioritize primary/landmark sources.**</step>
             <step>9. **Any number must include what/where/when/method. Prefer primary data over blog roundups.**</step>
             <step>10. **Expand each section with profound depth, detailed examples, and thorough elaboration to comprehensively reach the 3000-3500 word count target, ensuring all content is substantive and not filler.**</step>
@@ -67,7 +53,7 @@ def generate_blog_draft(plan_text: str) -> str:
             <technical_depth>Deep, actionable insights for developers and engineers -- not just high-level overviews. Content must be comprehensive and well-researched.</technical_depth>
             <word_count_target>3000--3500 words.</word_count_target>
             <citation_style>
-                **For every concrete claim (stat %, date, $, benchmark, company name, standard), attach a source with: title, publisher, author, URL, publish date (YYYY-MM-DD), and access date. If evidence is mixed, say ‘Evidence unclear’ and show both sides. Never invent sources.**
+                **For every concrete claim (stat %, date, $, benchmark, company name, standard), attach a source with: title, publisher, author, URL, publish date (YYYY-MM-DD), and access date. If evidence is mixed, say 'Evidence unclear' and show both sides. Never invent sources.**
                 **If the topic is fast-moving (e.g., AI, security, policy, prices, product specs), include ≥3 reputable sources from the last 12 months. If historical, prioritize primary/landmark sources.**
                 **Any number must include what/where/when/method. Prefer primary data over blog roundups.**
             </citation_style>
@@ -80,58 +66,9 @@ def generate_blog_draft(plan_text: str) -> str:
 
     <input_data>
         <content_plan>{plan_text}</content_plan>
-        <topic>{{{{BLOG_TOPIC}}}}</topic>
-        <!-- Optional contextual variables for tailoring content -->
-        <audience>{{audience}}</audience>
-        <goal>{{goal}}</goal>
-        <region>{{region}}</region>
-        <timeframe>{{timeframe}}</timeframe>
-        <tone>{{tone}}</tone>
     </input_data>
-
-    <few_shot_examples>
-        <note>
-            Review these examples on the provided Medium URLs to learn their style, structure, tone, formatting, and how they integrate data and technical explanation.
-            Do NOT reuse any sentences, paragraphs, or specific content from them.
-        </note>
-
-        <example_1>
-            <title>How to Get Started with Generative AI</title>
-            <source_url>https://medium.com/@Tekrowedigital/how-to-get-started-with-generative-ai-11c760389a02</source_url>
-        </example_1>
-
-        <example_2>
-            <title>How AI is Transforming Fashion: Design, Production & Sales Optimization</title>
-            <source_url>https://medium.com/@Tekrowedigital/how-ai-is-transforming-fashion-design-production-sales-optimization-ca78202dc3dd</source_url>
-        </example_2>
-
-        <example_3>
-            <title>AI in SaaS: How Artificial Intelligence is Transforming Software as a Service</title>
-            <source_url>https://medium.com/@Tekrowedigital/ai-in-saas-how-artificial-intelligence-is-transforming-software-as-a-service-e201447f708a</source_url>
-        </example_3>
-
-        <example_4>
-            <title>Generative AI for Marketing: Transforming Content & Engagement</title>
-            <source_url>https://medium.com/@Tekrowedigital/generative-ai-for-marketing-transforming-content-engagement-78743fe6ce1f</source_url>
-        </example_4>
-    </few_shot_examples>
 </writer_prompt>
 """
 
-    prompt = textwrap.dedent(raw_writer_agent_prompt)
-    return llm.invoke(prompt).content
-
-def run():
-    plan = read_content_plan()
-    if not plan:
-        return
-    print("[~] Drafting blog post…")
-    draft = generate_blog_draft(plan)
-    os.makedirs("output", exist_ok=True)
-    out_path = "output/blog_draft.md"
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(draft)
-    print(f"[✓] Blog draft saved to {out_path}")
-
-if __name__ == "__main__":
-    run()
+    result = llm.invoke([{"role": "user", "content": raw_writer_agent_prompt}])
+    return result.content
