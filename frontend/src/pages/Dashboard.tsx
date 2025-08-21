@@ -4,10 +4,16 @@ import { Link } from 'react-router-dom';
 import { Plus, Eye, Trash2, Clock, CheckCircle, AlertCircle, BookOpen, RefreshCw, Loader2 } from 'lucide-react';
 import { getBlogs, deleteBlog, resumeBlogPipeline, getBlogResumeStatus, cleanupAbandonedBlogs } from '../services/api';
 import { Blog } from '../types/blog';
+import ConfirmationPopup from '../components/ConfirmationPopup';
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const [resumingBlogId, setResumingBlogId] = useState<number | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; blogId: number | null; blogTitle: string | null }>({
+    isOpen: false,
+    blogId: null,
+    blogTitle: null
+  });
   const { data: blogs, isLoading, refetch } = useQuery({
     queryKey: ['blogs'],
     queryFn: getBlogs,
@@ -66,6 +72,30 @@ export default function Dashboard() {
         console.error('Failed to delete blog:', error);
       }
     }
+  };
+
+  const showDeleteConfirmation = (blogId: number, blogTitle: string | null) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      blogId,
+      blogTitle
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirmation.blogId) {
+      try {
+        await deleteBlog(deleteConfirmation.blogId);
+        refetch();
+        setDeleteConfirmation({ isOpen: false, blogId: null, blogTitle: null });
+      } catch (error) {
+        console.error('Failed to delete blog:', error);
+      }
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmation({ isOpen: false, blogId: null, blogTitle: null });
   };
 
   const getStatusIcon = (status: string) => {
@@ -221,7 +251,7 @@ export default function Dashboard() {
                           
                           {/* Delete Button */}
                           <button
-                            onClick={() => handleDelete(blog.id)}
+                            onClick={() => showDeleteConfirmation(blog.id, blog.title)}
                             className="text-red-600 hover:text-red-900"
                             title="Delete blog"
                           >
@@ -256,6 +286,18 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Popup */}
+      <ConfirmationPopup
+        isOpen={deleteConfirmation.isOpen}
+        title="Delete Blog"
+        message={`Are you sure you want to delete "${deleteConfirmation.blogTitle || 'this blog'}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }
