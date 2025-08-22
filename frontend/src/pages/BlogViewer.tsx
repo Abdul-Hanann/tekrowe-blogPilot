@@ -151,16 +151,85 @@ export default function BlogViewer() {
       // Convert markdown to HTML first
       const htmlContent = convertMarkdownToHTML(content);
 
-      // Create a simple HTML document
+      // Create a professional HTML document with styling
       const fullHtml = `
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
           <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>${filename}</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f9f9f9;
+            }
+            .container {
+              background: white;
+              padding: 40px;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            h1 {
+              color: #2c3e50;
+              border-bottom: 3px solid #3498db;
+              padding-bottom: 10px;
+              margin-bottom: 30px;
+            }
+            h2 {
+              color: #34495e;
+              border-bottom: 2px solid #ecf0f1;
+              padding-bottom: 8px;
+              margin-top: 30px;
+            }
+            h3 {
+              color: #7f8c8d;
+              margin-top: 25px;
+            }
+            p {
+              margin-bottom: 15px;
+              text-align: justify;
+            }
+            ul, ol {
+              margin-bottom: 15px;
+              padding-left: 20px;
+            }
+            li {
+              margin-bottom: 5px;
+            }
+            code {
+              background-color: #f8f9fa;
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-family: 'Courier New', monospace;
+              border: 1px solid #e9ecec;
+            }
+            .header-info {
+              background-color: #ecf0f1;
+              padding: 15px;
+              border-radius: 5px;
+              margin-bottom: 30px;
+              text-align: center;
+              color: #7f8c8d;
+            }
+            @media print {
+              body { background-color: white; }
+              .container { box-shadow: none; }
+            }
+          </style>
         </head>
         <body>
-          ${htmlContent}
+          <div class="container">
+            <div class="header-info">
+              <strong>Generated on:</strong> ${new Date().toLocaleDateString()}
+            </div>
+            ${htmlContent}
+          </div>
         </body>
         </html>
       `;
@@ -175,8 +244,77 @@ export default function BlogViewer() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error downloading as DOCX:', error);
+      console.error('Error downloading as HTML:', error);
       alert('Error downloading document. Please try again.');
+    }
+  };
+
+  const downloadAsWordDocx = async (content: string, filename: string) => {
+    try {
+      // Create a proper RTF (Rich Text Format) file that Word can open directly
+      // This approach ensures compatibility and maintains formatting
+      
+      // Convert markdown to RTF format with better styling
+      let rtfContent = content
+        .replace(/^# (.*$)/gim, '\n\n\\b\\fs28\\cf2 $1\\cf1\\fs22\\b0\n') // Main headers - bold, larger, blue
+        .replace(/^## (.*$)/gim, '\n\n\\b\\fs24\\cf2 $1\\cf1\\fs22\\b0\n') // Sub headers - bold, medium, blue
+        .replace(/^### (.*$)/gim, '\n\n\\b\\fs20\\cf3 $1\\cf1\\b0\n') // Sub-sub headers - bold, gray
+        .replace(/\*\*(.*?)\*\*/g, '\\b $1\\b0') // Bold text
+        .replace(/\*(.*?)\*/g, '\\i $1\\i0') // Italic text
+        .replace(/`(.*?)`/g, '\\f1\\fs18 $1\\f0\\fs22') // Code - monospace font, smaller
+        .replace(/^\d+\.\s*/gim, '\\bullet ') // Numbered lists to bullet points
+        .replace(/^-\s*/gim, '\\bullet '); // Dash lists to bullet points
+
+      // Create RTF document with enhanced formatting and colors
+      const rtfDocument = `{\\rtf1\\ansi\\deff0
+{\\fonttbl {\\f0 Calibri;}{\\f1 Courier New;}}
+{\\colortbl ;\\red0\\green0\\blue0;\\red44\\green62\\blue80;\\red127\\green140\\blue141;\\red52\\green152\\blue219;}
+\\f0\\fs28\\b\\cf2 ${filename}\\cf1\\b0\\par
+\\par
+\\fs18\\cf4 Generated on: ${new Date().toLocaleDateString()}\\cf1\\par
+\\par
+\\fs22
+${rtfContent.replace(/\n/g, '\\par ')}
+}`;
+
+      // Download as RTF file
+      const blob = new Blob([rtfDocument], { type: 'application/rtf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filename}.rtf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Error downloading as RTF:', error);
+      // Fallback to text file if RTF generation fails
+      try {
+        let plainText = content
+          .replace(/^# (.*$)/gim, '\n\n$1\n')
+          .replace(/^## (.*$)/gim, '\n\n$1\n')
+          .replace(/^### (.*$)/gim, '\n\n$1\n')
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/\*(.*?)\*/g, '$1')
+          .replace(/`(.*?)`/g, '$1')
+          .replace(/^\d+\.\s*/gim, '• ')
+          .replace(/^-\s*/gim, '• ');
+
+        const docContent = `${filename}\n\nGenerated on: ${new Date().toLocaleDateString()}\n\n${plainText}`;
+        const blob = new Blob([docContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (fallbackError) {
+        alert('Error downloading document. Please try again.');
+      }
     }
   };
 
@@ -189,57 +327,209 @@ export default function BlogViewer() {
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 20;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 30;
       const maxWidth = pageWidth - 2 * margin;
 
-      // Convert markdown to plain text for PDF
-      const plainText = content
-        .replace(/^### (.*$)/gim, '$1')
-        .replace(/^## (.*$)/gim, '$1')
-        .replace(/^# (.*$)/gim, '$1')
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/\*(.*?)\*/g, '$1')
-        .replace(/`(.*?)`/g, '$1');
+             // Helper function to wrap text properly with better word breaking
+       const wrapText = (text: string, maxWidth: number) => {
+         const words = text.split(' ');
+         const lines: string[] = [];
+         let currentLine = '';
 
-      // Split content into lines
-      const lines = plainText.split('\n');
-      let y = 20;
+         for (const word of words) {
+           const testLine = currentLine + word + ' ';
+           const testWidth = doc.getTextWidth(testLine);
+           
+           if (testWidth > maxWidth && currentLine !== '') {
+             // Don't break on single characters or very short words
+             if (currentLine.trim().length < 3 && lines.length > 0) {
+               // Move the last word to the previous line if possible
+               const lastLine = lines[lines.length - 1];
+               const combinedLine = lastLine + ' ' + currentLine.trim();
+               if (doc.getTextWidth(combinedLine) <= maxWidth) {
+                 lines[lines.length - 1] = combinedLine;
+                 currentLine = word + ' ';
+                 continue;
+               }
+             }
+             lines.push(currentLine.trim());
+             currentLine = word + ' ';
+           } else {
+             currentLine = testLine;
+           }
+         }
+         
+         if (currentLine.trim()) {
+           lines.push(currentLine.trim());
+         }
+         
+         return lines;
+       };
 
-      doc.setFontSize(16);
-      doc.text(filename, margin, y);
-      y += 20;
-
-      doc.setFontSize(12);
-      for (const line of lines) {
-        if (line.trim()) {
-          if (y > doc.internal.pageSize.getHeight() - 20) {
-            doc.addPage();
-            y = 20;
+                    // Helper function to add text with proper wrapping and justification
+        const addWrappedText = (text: string, x: number, y: number, maxWidth: number, fontSize: number, isBold: boolean = false) => {
+          doc.setFontSize(fontSize);
+          if (isBold) {
+            doc.setFont(undefined, 'bold');
+          } else {
+            doc.setFont(undefined, 'normal');
           }
           
-          const words = line.split(' ');
-          let currentLine = '';
+          const lines = wrapText(text, maxWidth);
+          let currentY = y;
           
-          for (const word of words) {
-            const testLine = currentLine + word + ' ';
-            const testWidth = doc.getTextWidth(testLine);
-            
-            if (testWidth > maxWidth) {
-              doc.text(currentLine, margin, y);
-              y += 7;
-              currentLine = word + ' ';
-            } else {
-              currentLine = testLine;
-            }
+          for (const line of lines) {
+            // Always left-align text to maintain consistent margins
+            doc.text(line, x, currentY);
+            currentY += fontSize * 0.4; // Increased line height for better readability within paragraphs/headings
           }
           
-          if (currentLine.trim()) {
-            doc.text(currentLine, margin, y);
-            y += 7;
+          return currentY - y + fontSize * 0.15; // Return height used
+        };
+
+             // Convert markdown to structured content for PDF
+       // First, convert markdown to plain text with proper formatting
+       let formattedContent = content
+         .replace(/^# (.*$)/gim, '\n\n$1\n') // Main headers
+         .replace(/^## (.*$)/gim, '\n\n$1\n') // Sub headers  
+         .replace(/^### (.*$)/gim, '\n\n$1\n') // Sub-sub headers
+         .replace(/\*\*(.*?)\*\*/g, '$1') // Bold text
+         .replace(/\*(.*?)\*/g, '$1') // Italic text
+         .replace(/`(.*?)`/g, '$1') // Code
+         .replace(/^\d+\.\s*/gim, '• ') // Numbered lists to bullet points
+         .replace(/^-\s*/gim, '• '); // Dash lists to bullet points
+       
+       const sections = formattedContent.split('\n\n');
+       let y = margin;
+
+                    // Add header with title - styled like HTML
+        const titleLines = wrapText(filename, maxWidth);
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(44, 62, 80); // Dark blue color like HTML h1
+        
+        // Add a border line under the title like HTML
+        doc.setDrawColor(52, 152, 219); // Blue border color
+        doc.setLineWidth(3);
+        
+        // Left-align the title to match content margins
+        for (const titleLine of titleLines) {
+          // Always wrap the title to ensure it fits within content margins
+          const wrappedTitleLines = wrapText(titleLine, maxWidth);
+          for (const wrappedLine of wrappedTitleLines) {
+            doc.text(wrappedLine, margin, y);
+            y += 8; // Reduced spacing between title lines
           }
-        } else {
-          y += 5;
         }
+        
+        // Draw border line under title
+        y += 4;
+        doc.line(margin, y, margin + maxWidth, y);
+        y += 8; // Reduced spacing after title
+
+        // Add date in styled box like HTML
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.setFillColor(236, 240, 241); // Light gray background like HTML
+        doc.setDrawColor(233, 236, 239); // Border color
+        
+        const dateText = `Generated on: ${new Date().toLocaleDateString()}`;
+        const dateWidth = doc.getTextWidth(dateText);
+        const dateBoxWidth = dateWidth + 20;
+        const dateBoxX = margin + (maxWidth - dateBoxWidth) / 2;
+        
+        // Draw background box
+        doc.rect(dateBoxX, y - 5, dateBoxWidth, 15, 'F');
+        doc.rect(dateBoxX, y - 5, dateBoxWidth, 15, 'D');
+        
+        // Center the date text in the box
+        doc.text(dateText, dateBoxX + 10, y + 3);
+        y += 20; // Spacing after date box
+
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+
+      // Process each section
+      for (const section of sections) {
+        if (!section.trim()) continue;
+
+        const lines = section.split('\n');
+        let isHeader = false;
+
+                 for (const line of lines) {
+           if (!line.trim()) {
+             y += 4;
+             continue;
+           }
+
+           // Since we've already converted markdown, we can detect headers by their formatting
+           // Headers are now just plain text without markdown symbols
+           if (line.trim().length > 0 && !line.startsWith('•') && !line.startsWith('Generated on:')) {
+             // Check if this looks like a header (longer text, could be a title)
+             const trimmedLine = line.trim();
+             
+                           // If it's a main section title (like the first line after title)
+                             if (trimmedLine.length > 30 && !trimmedLine.includes('.') && !trimmedLine.includes('•')) {
+                 isHeader = true;
+                 // Style like HTML h1 (no border)
+                 const heightUsed = addWrappedText(trimmedLine, margin, y, maxWidth, 16, true);
+                 y += heightUsed + 0.5; // Much smaller spacing after main headers
+                 continue;
+               } 
+                             // If it's a shorter line that could be a sub-header
+               else if (trimmedLine.length > 15 && trimmedLine.length <= 30 && !trimmedLine.includes('.') && !trimmedLine.includes('•')) {
+                 isHeader = true;
+                 // Style like HTML h2 (no border)
+                 const heightUsed = addWrappedText(trimmedLine, margin, y, maxWidth, 14, true);
+                 y += heightUsed + 0.3; // Much smaller spacing after sub headers
+                 continue;
+               }
+           }
+
+                         // Handle bullet points (already converted from markdown)
+             if (line.startsWith('• ')) {
+               const listText = line.substring(2);
+               doc.setFontSize(11);
+               doc.setFont(undefined, 'normal');
+               // Ensure consistent indentation for list items
+               const bulletText = `• ${listText}`;
+               const bulletWidth = doc.getTextWidth(bulletText);
+               if (bulletWidth > maxWidth) {
+                 // If bullet text is too long, wrap it properly
+                 const heightUsed = addWrappedText(listText, margin + 8, y, maxWidth - 8, 11, false);
+                 y += heightUsed + 1.5; // Much smaller spacing for list items
+               } else {
+                 doc.text(bulletText, margin + 5, y);
+                 y += 1.5; // Much smaller spacing for list items
+               }
+             } else {
+               // Regular paragraph text
+               const heightUsed = addWrappedText(line, margin, y, maxWidth, 11, false);
+               y += heightUsed + 0.5; // Much smaller spacing between paragraphs
+             }
+
+          // Check if we need a new page
+          if (y > pageHeight - margin - 30) {
+            doc.addPage();
+            y = margin;
+          }
+
+          isHeader = false;
+        }
+
+                                   // Add space between sections
+          y += 1; // Much smaller spacing between sections
+      }
+
+      // Add footer
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
       }
 
       doc.save(`${filename}.pdf`);
@@ -988,27 +1278,38 @@ export default function BlogViewer() {
                        </>
                      )}
                      
-                     <button 
-                       onClick={() => downloadAsMarkdown(blog.blog_seo || '', blog.title || 'blog')}
-                       className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                     >
-                       <Download className="h-4 w-4 mr-1" />
-                       MD
-                     </button>
-                     <button 
-                       onClick={() => downloadAsPDF(blog.blog_seo || '', blog.title || 'blog')}
-                       className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-                     >
-                       <Download className="h-4 w-4 mr-1" />
-                       PDF
-                     </button>
-                     <button 
-                       onClick={() => downloadAsDocx(blog.blog_seo || '', blog.title || 'blog')}
-                       className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                     >
-                       <Download className="h-4 w-4 mr-1" />
-                       HTML
-                     </button>
+                                           <button 
+                        onClick={() => downloadAsMarkdown(blog.blog_seo || '', blog.title || 'blog')}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                        title="Download as Markdown file"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Markdown
+                      </button>
+                      <button 
+                        onClick={() => downloadAsPDF(blog.blog_seo || '', blog.title || 'blog')}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                        title="Download as professional PDF"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        PDF
+                      </button>
+                                             <button 
+                         onClick={() => downloadAsWordDocx(blog.blog_seo || '', blog.title || 'blog')}
+                         className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                         title="Download as styled Rich Text Format (.rtf) - opens directly in Word with HTML-like formatting"
+                       >
+                         <Download className="h-4 w-4 mr-1" />
+                         Word (Styled RTF)
+                       </button>
+                      <button 
+                        onClick={() => downloadAsDocx(blog.blog_seo || '', blog.title || 'blog')}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                        title="Download as styled HTML document"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        HTML
+                      </button>
                    </>
                  )}
                </div>
