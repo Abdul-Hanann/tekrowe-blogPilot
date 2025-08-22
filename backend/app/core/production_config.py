@@ -11,6 +11,7 @@ class ProductionConfig:
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
     CORS_ORIGINS = [
         FRONTEND_URL,  # Production frontend URL from environment
+        "https://tekrowe-blogpilot.vercel.app",  # Production Vercel frontend
         "http://localhost:3000",  # For local development
         "http://localhost:5173",  # For local development (Vite)
         "http://localhost:5174",  # For local development (Vite alt port)
