@@ -16,11 +16,6 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://your-backend-domain.onrender.com"
-  },
-  "functions": {
-    "frontend/dist/**": {
-      "includeFiles": "frontend/dist/**"
-    }
+    "VITE_API_URL": "https://tekrowe-blogpilot.onrender.com"
   }
 }
