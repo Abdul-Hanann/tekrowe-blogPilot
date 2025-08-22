@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
 import { BookOpen, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { createBlog, generateTopics, selectTopic } from '../services/api';
-import { BlogCreate, Topic } from '../types/blog';
+import { Topic } from '../types/blog';
 
 interface FormData {
   title?: string;
@@ -16,8 +15,6 @@ export default function BlogCreator() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [isGeneratingTopics, setIsGeneratingTopics] = useState(false);
-
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
 
   // Create blog mutation
   const createBlogMutation = useMutation({
@@ -201,9 +198,9 @@ export default function BlogCreator() {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">Error</h3>
               <div className="mt-2 text-sm text-red-700">
-                {createBlogMutation.error?.message ||
-                 generateTopicsMutation.error?.message ||
-                 selectTopicMutation.error?.message ||
+                {(createBlogMutation.error as any)?.message ||
+                 (generateTopicsMutation.error as any)?.message ||
+                 (selectTopicMutation.error as any)?.message ||
                  'An unexpected error occurred'}
               </div>
             </div>

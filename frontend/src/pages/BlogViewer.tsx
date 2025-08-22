@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBlog, getBlogProgress, resumeBlogPipeline, pauseBlogPipeline, generateTopics, selectTopic, getBlogProcessStatus } from '../services/api';
-import { Blog, BlogStatus } from '../types/blog';
+import { BlogStatus } from '../types/blog';
 import { 
   Clock, 
   CheckCircle, 
@@ -15,10 +15,8 @@ import {
   Edit3,
   Save,
   X,
-  RefreshCw,
   Pause,
-  Play,
-  Info
+  Play
 } from 'lucide-react';
 
 // Dynamic import for jsPDF to avoid SSR issues
@@ -282,12 +280,7 @@ export default function BlogViewer() {
     }
   }, [blog]);
 
-  const { data: progress } = useQuery({
-    queryKey: ['blog-progress', blogId],
-    queryFn: () => getBlogProgress(blogId),
-    enabled: !!blog && blog.status !== 'completed',
-    refetchInterval: 5000,
-  });
+
 
   // Enhanced process status query with optimized polling
   const { data: detailedProcessStatus } = useQuery({
@@ -970,7 +963,7 @@ export default function BlogViewer() {
                    <>
                      {!isEditing ? (
                        <button
-                         onClick={() => startEditing(blog.blog_seo)}
+                         onClick={() => startEditing(blog.blog_seo || '')}
                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                        >
                          <Edit3 className="h-4 w-4 mr-1" />
@@ -1006,21 +999,21 @@ export default function BlogViewer() {
                      )}
                      
                      <button 
-                       onClick={() => downloadAsMarkdown(blog.blog_seo, blog.title || 'blog')}
+                       onClick={() => downloadAsMarkdown(blog.blog_seo || '', blog.title || 'blog')}
                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                      >
                        <Download className="h-4 w-4 mr-1" />
                        MD
                      </button>
                      <button 
-                       onClick={() => downloadAsPDF(blog.blog_seo, blog.title || 'blog')}
+                       onClick={() => downloadAsPDF(blog.blog_seo || '', blog.title || 'blog')}
                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
                      >
                        <Download className="h-4 w-4 mr-1" />
                        PDF
                      </button>
                      <button 
-                       onClick={() => downloadAsDocx(blog.blog_seo, blog.title || 'blog')}
+                       onClick={() => downloadAsDocx(blog.blog_seo || '', blog.title || 'blog')}
                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                      >
                        <Download className="h-4 w-4 mr-1" />
@@ -1040,7 +1033,7 @@ export default function BlogViewer() {
                       <div 
                         className="prose prose-sm max-w-none border rounded-lg p-6 bg-white"
                         dangerouslySetInnerHTML={{ 
-                          __html: convertMarkdownToHTML(blog.blog_seo)
+                          __html: convertMarkdownToHTML(blog.blog_seo || '')
                         }}
                       />
                     </div>
