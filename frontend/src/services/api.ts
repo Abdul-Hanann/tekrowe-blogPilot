@@ -66,6 +66,11 @@ export const deleteBlog = async (id: number): Promise<void> => {
   await api.delete(`/api/blogs/${id}`);
 };
 
+export const updateBlogContent = async (blogId: number, content: string): Promise<{ message: string }> => {
+  const response = await api.put(`/api/blogs/${blogId}/update-content`, { content });
+  return response.data;
+};
+
 // Blog progress and AI operations
 export const getBlogProgress = async (id: number): Promise<BlogProgress> => {
   const response = await api.get(`/api/blogs/${id}/progress`);

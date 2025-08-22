@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getBlog, getBlogProgress, resumeBlogPipeline, pauseBlogPipeline, generateTopics, selectTopic, getBlogProcessStatus } from '../services/api';
+import { getBlog, getBlogProgress, resumeBlogPipeline, pauseBlogPipeline, generateTopics, selectTopic, getBlogProcessStatus, updateBlogContent } from '../services/api';
 import { BlogStatus } from '../types/blog';
 import { 
   Clock, 
@@ -321,17 +321,7 @@ export default function BlogViewer() {
   // Update blog content mutation
   const updateBlogMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await fetch(`/api/blogs/${blogId}/update-content`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update blog content');
-      }
-      return response.json();
+      return updateBlogContent(blogId, content);
     },
     onSuccess: () => {
       // Invalidate and refetch the blog data
