@@ -266,9 +266,8 @@ export default function BlogViewer() {
       try {
         const parsedTopics = JSON.parse(blog.generated_topics);
         setTopics(parsedTopics);
-        console.log(`Loaded ${parsedTopics.length} existing topics for blog ${blog.id}`);
       } catch (error) {
-        console.error('Error parsing generated topics:', error);
+        // Silently handle parsing errors
       }
     }
     

@@ -42,7 +42,6 @@ class AIPipelineService:
             
         except Exception as e:
             await self._update_status(blog_id, 'failed', f"Pipeline failed: {str(e)}")
-            print(f"Pipeline failed for blog {blog_id}: {str(e)}")
             
             # Clean up active pipeline tracking
             if blog_id in self.active_pipelines:
@@ -58,15 +57,12 @@ class AIPipelineService:
 
     def generate_topics(self) -> List[Dict[str, Any]]:
         """Generate topics for a blog (legacy method)"""
-        print(f"generate_topics called - generating new topics")
         topics_text = generate_trending_topics()
         topics = parse_topics_from_text(topics_text)
-        print(f"generate_topics returning {len(topics)} topics")
         return topics
 
     def generate_topics_for_blog(self, blog_id: int) -> List[Dict[str, Any]]:
         """Generate topics for a specific blog and cache them"""
-        print(f"generate_topics_for_blog called for blog {blog_id}")
         
         # Generate new topics
         topics_text = generate_trending_topics()
@@ -88,11 +84,9 @@ class AIPipelineService:
                 'step_completion_status': json.dumps(step_status),
                 'last_activity': datetime.now()
             })
-            print(f"Saved {len(topics)} topics to database for blog {blog_id}")
         except Exception as e:
-            print(f"Error saving topics to database: {str(e)}")
+            pass  # Silently handle database errors
         
-        print(f"Generated and cached {len(topics)} topics for blog {blog_id}")
         return topics
 
     def select_topic(self, blog_id: int, topic_selection: int) -> bool:
@@ -109,38 +103,21 @@ class AIPipelineService:
                 try:
                     import json
                     topics = json.loads(blog.generated_topics)
-                    print(f"Retrieved {len(topics)} topics from database for blog {blog_id}")
                 except json.JSONDecodeError as e:
-                    print(f"Error parsing generated_topics from database: {e}")
                     topics = None
             
             # If no topics in database, try cache
             if not topics and blog_id in self.topics_cache:
                 topics = self.topics_cache[blog_id]
-                print(f"Using cached topics for blog {blog_id}")
-                print(f"Retrieved {len(topics)} cached topics")
             
             # If still no topics, we can't proceed
             if not topics:
-                print(f"ERROR: No topics found for blog {blog_id} in database or cache")
-                print(f"Topics must be generated first via /topics endpoint")
                 return False
-
-            # Debug: Print topics and selection
-            print(f"Available topics count: {len(topics)}")
-            for i, topic in enumerate(topics):
-                print(f"  Topic {i+1}: {topic['title']} (number: {topic['number']})")
-            print(f"Topic selection received: {topic_selection}")
-            print(f"Topic selection type: {type(topic_selection)}")
 
             # Select the topic
             selected_topic = select_topic_by_number(topics, topic_selection)
             if not selected_topic:
-                print(f"Failed to select topic {topic_selection}")
                 return False
-
-            print(f"Selected topic: {selected_topic['title']}")
-            print(f"Selected topic details: {selected_topic['details'][:100]}...")
 
             # Update blog with selected topic and title
             self.blog_service.update_blog(blog_id, {
@@ -156,7 +133,6 @@ class AIPipelineService:
             return True
 
         except Exception as e:
-            print(f"Error selecting topic: {e}")
             return False
 
     async def _continue_pipeline(self, blog_id: int, selected_topic: Dict[str, Any]):
@@ -187,9 +163,7 @@ class AIPipelineService:
                     'last_activity': datetime.now()
                 })
                 self._update_step_completion(blog_id, 'content_planning', True)
-                print(f"Generated content plan for blog {blog_id}")
             else:
-                print(f"Content plan already exists for blog {blog_id}, skipping...")
                 await self._update_status(blog_id, 'writing', "Content plan exists, continuing with writing...")
                 self._update_step_completion(blog_id, 'content_planning', True)
 
@@ -204,9 +178,7 @@ class AIPipelineService:
                     'last_activity': datetime.now()
                 })
                 self._update_step_completion(blog_id, 'writing', True)
-                print(f"Generated blog draft for blog {blog_id}")
             else:
-                print(f"Blog draft already exists for blog {blog_id}, skipping...")
                 await self._update_status(blog_id, 'editing', "Blog draft exists, continuing with editing...")
                 self._update_step_completion(blog_id, 'writing', True)
 
@@ -221,9 +193,7 @@ class AIPipelineService:
                     'last_activity': datetime.now()
                 })
                 self._update_step_completion(blog_id, 'editing', True)
-                print(f"Generated edited blog for blog {blog_id}")
             else:
-                print(f"Edited blog already exists for blog {blog_id}, skipping...")
                 await self._update_status(blog_id, 'seo_optimization', "Edited blog exists, continuing with SEO optimization...")
                 self._update_step_completion(blog_id, 'editing', True)
 
@@ -238,13 +208,11 @@ class AIPipelineService:
                     'last_activity': datetime.now()
                 })
                 self._update_step_completion(blog_id, 'seo_optimization', True)
-                print(f"Generated SEO optimized blog for blog {blog_id}")
             else:
-                print(f"SEO optimized blog already exists for blog {blog_id}, skipping...")
+                pass
 
             # Pipeline completed
             await self._update_status(blog_id, 'completed', "Blog creation completed!")
-            print(f"Pipeline completed successfully for blog {blog_id}")
             
             # Clean up active pipeline tracking
             if blog_id in self.active_pipelines:
@@ -259,7 +227,6 @@ class AIPipelineService:
 
         except Exception as e:
             await self._update_status(blog_id, 'failed', f"Pipeline failed: {str(e)}")
-            print(f"Pipeline failed for blog {blog_id}: {str(e)}")
             
             # Clean up active pipeline tracking
             if blog_id in self.active_pipelines:
@@ -278,7 +245,7 @@ class AIPipelineService:
                     'step_completion_status': json.dumps(step_status)
                 })
         except Exception as e:
-            print(f"Error updating step completion status: {e}")
+            pass
 
     def _get_step_completion_status(self, blog_id: int) -> Dict[str, bool]:
         """Get the current step completion status for a blog"""
@@ -287,7 +254,7 @@ class AIPipelineService:
             if blog and blog.step_completion_status:
                 return json.loads(blog.step_completion_status)
         except Exception as e:
-            print(f"Error getting step completion status: {e}")
+            pass
         
         # Return default status if none exists
         return {
@@ -311,7 +278,7 @@ class AIPipelineService:
                 if blog.is_pipeline_active is not None:
                     return blog.is_pipeline_active
         except Exception as e:
-            print(f"Error checking blog status for pipeline activity: {e}")
+            pass
         
         # Fallback to in-memory tracking
         return blog_id in self.active_pipelines
@@ -338,7 +305,6 @@ class AIPipelineService:
                 return True
             return False
         except Exception as e:
-            print(f"Error pausing pipeline: {e}")
             return False
 
     async def _update_status(self, blog_id: int, status: BlogStatus, message: str):
@@ -376,7 +342,6 @@ class AIPipelineService:
                 progress_percentage=progress_percentage
             )
         except Exception as e:
-            print(f"Error calculating progress: {e}")
             # Fallback to old method
             status_order = [
                 'pending',
@@ -400,34 +365,25 @@ class AIPipelineService:
     def resume_pipeline(self, blog_id: int) -> bool:
         """Resume the pipeline from where it left off for any incomplete blog"""
         try:
-            print(f"Attempting to resume pipeline for blog {blog_id}")
-            
             # Get the blog
             blog = self.blog_service.get_blog(blog_id)
             if not blog:
-                print(f"Blog {blog_id} not found")
                 return False
 
             # Check if pipeline is already running
             if self.is_pipeline_active(blog_id):
-                print(f"Pipeline is already running for blog {blog_id}")
                 return False
 
             # Check current status and resume accordingly
             if blog.status == 'pending':
-                print(f"Blog {blog_id} is pending - user needs to generate topics first")
                 return False
                 
             elif blog.status == 'topic_generation':
-                print(f"Blog {blog_id} needs topics generated - user should generate topics first")
                 return False
                 
             elif blog.status == 'failed' or blog.status == 'paused':
-                print(f"Resuming {'failed' if blog.status == 'failed' else 'paused'} pipeline for blog {blog_id}")
-                
                 # Check if blog has a selected topic
                 if not blog.selected_topic:
-                    print(f"Blog {blog_id} has no selected topic, cannot resume")
                     return False
                 
                 # Parse the selected topic to get details
@@ -453,11 +409,8 @@ class AIPipelineService:
                 return True
                 
             elif blog.status in ['content_planning', 'writing', 'editing', 'seo_optimization']:
-                print(f"Blog {blog_id} is in progress, continuing pipeline")
-                
                 # Check if blog has a selected topic
                 if not blog.selected_topic:
-                    print(f"Blog {blog_id} has no selected topic, cannot resume")
                     return False
                 
                 # Parse the selected topic to get details
@@ -481,11 +434,9 @@ class AIPipelineService:
                 return True
                 
             else:
-                print(f"Blog {blog_id} status '{blog.status}' does not require resuming")
                 return False
                 
         except Exception as e:
-            print(f"Error resuming pipeline for blog {blog_id}: {str(e)}")
             return False
 
     def can_resume_blog(self, blog_id: int) -> dict:
@@ -562,8 +513,6 @@ class AIPipelineService:
     def cleanup_abandoned_blogs(self) -> dict:
         """Clean up blogs that have no topics generated - keep only records with topics and beyond"""
         try:
-            print("Starting cleanup of blogs with no topics generated...")
-            
             # Get all blogs
             all_blogs = self.blog_service.get_all_blogs()
             cleaned_count = 0
@@ -574,24 +523,16 @@ class AIPipelineService:
                 # - Any status but no generated_topics field or empty generated_topics
                 has_topics = blog.generated_topics and blog.generated_topics.strip()
                 
-                print(f"Blog {blog.id}: status={blog.status}, generated_topics={blog.generated_topics}, has_topics={has_topics}")
-                
                 if not has_topics:
-                    print(f"Deleting blog {blog.id} (status: {blog.status}, no topics generated)")
                     try:
                         success = self.blog_service.delete_blog(blog.id)
                         if success:
                             cleaned_count += 1
-                            print(f"✓ Successfully deleted blog {blog.id}")
-                        else:
-                            print(f"✗ Failed to delete blog {blog.id}")
                     except Exception as e:
-                        print(f"✗ Error deleting blog {blog.id}: {e}")
+                        pass
                 else:
-                    print(f"Preserving blog {blog.id} (status: {blog.status}, has topics generated)")
                     preserved_count += 1
             
-            print(f"Cleanup completed: {cleaned_count} blogs with no topics deleted, {preserved_count} preserved")
             return {
                 "cleaned_count": cleaned_count,
                 "preserved_count": preserved_count,
@@ -599,7 +540,6 @@ class AIPipelineService:
             }
             
         except Exception as e:
-            print(f"Error during cleanup: {str(e)}")
             return {
                 "cleaned_count": 0,
                 "preserved_count": 0,

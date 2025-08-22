@@ -38,7 +38,6 @@ export default function Dashboard() {
           ).length;
           
           if (noTopicsCount > 0) {
-            console.log(`Found ${noTopicsCount} blogs with no topics generated, running cleanup...`);
             await cleanupAbandonedBlogs();
           }
         }
