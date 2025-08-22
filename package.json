@@ -1,0 +1,17 @@
+{
+  "name": "tekrowe-ai-blog-automation",
+  "version": "1.0.0",
+  "description": "AI-powered blog automation system with resume capability",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "build": "cd frontend && npm run build",
+    "dev": "cd frontend && npm run dev",
+    "install:all": "npm install && cd frontend && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

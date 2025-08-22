@@ -17,7 +17,5 @@
   ],
   "env": {
     "VITE_API_URL": "https://tekrowe-blogpilot.onrender.com"
-  },
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/dist"
+  }
 }
