@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: tekrowe-blog-automation-backend
+    env: python
+    plan: free
+    rootDir: backend       # 👈 tells Render to use backend/ as working directory
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: DATABASE_URL
+        value: sqlite:///blog_automation.db
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+    healthCheckPath: /docs
+    autoDeploy: true

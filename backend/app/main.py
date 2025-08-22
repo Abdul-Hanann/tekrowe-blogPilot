@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import blog_router
 from app.core.config import settings
+from app.core.production_config import ProductionConfig
 
 app = FastAPI(
     title="AI Blog Automation API",
@@ -12,7 +13,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=ProductionConfig.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,4 +28,9 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {
+        "status": "healthy",
+        "service": "AI Blog Automation API",
+        "version": "1.0.0",
+        "environment": ProductionConfig.ENVIRONMENT
+    }
