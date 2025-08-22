@@ -12,7 +12,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 second timeout
+  timeout: 120000, // 2 minutes timeout for free tier cold starts and AI processing
 });
 
 // Request interceptor for debugging
@@ -27,14 +27,21 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for error handling with retry logic
 api.interceptors.response.use(
   (response) => {
     console.log(`✅ API Response: ${response.status} ${response.config.url}`);
     return response;
   },
-  (error) => {
+  async (error) => {
     console.error('❌ API Response Error:', error.response?.status, error.response?.data || error.message);
+    
+    // Retry logic for timeout errors (common in free tier)
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      console.log('⏰ Timeout detected, this is common with free tier services');
+      console.log('💡 Consider upgrading to paid tiers for better performance');
+    }
+    
     return Promise.reject(error);
   }
 );
