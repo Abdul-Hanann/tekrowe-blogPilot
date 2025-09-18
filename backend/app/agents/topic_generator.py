@@ -40,22 +40,22 @@ def generate_trending_topics():
             combined_results += "\n\n"
 
     prompt = f"""
-You are a senior technical content strategist tasked with building a blog editorial plan for 2025.
+        You are a senior technical content strategist tasked with building a blog editorial plan for 2025.
 
-From the research below, generate a list of **20 high-quality blog or whitepaper topic ideas** across AI, software engineering, and the tech business landscape.
+        From the research below, generate a list of **15 high-quality blog or whitepaper topic ideas** across AI, software engineering, and the tech business landscape.
 
-Group them into 3 categories:
-**[Trending Now]**, **[Needs Explanation]**, **[Thought Leadership]**
+        Group them into 3 categories:
+        **[Trending Now]**, **[Needs Explanation]**, **[Thought Leadership]**
 
-For each topic, provide:
-1. **Title**
-2. **2–3 sentence summary**
-3. **Suggested angle**
-4. **Intended audience**
+        For each topic, provide:
+        1. **Title**
+        2. **2–3 sentence summary**
+        3. **Suggested angle**
+        4. **Intended audience**
 
-===== START OF RAW SOURCE MATERIAL =====
-{combined_results}
-===== END OF RAW SOURCE MATERIAL =====
+        ===== START OF RAW SOURCE MATERIAL =====
+        {combined_results}
+        ===== END OF RAW SOURCE MATERIAL =====
     """
 
     result = llm.invoke([{"role": "user", "content": prompt}])

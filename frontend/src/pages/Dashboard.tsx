@@ -214,7 +214,7 @@ export default function Dashboard() {
                            
                                                        {/* Resume button - only show for failed blogs or when pipeline is not running */}
                             {(blog.status === 'failed' || 
-                              (['content_planning', 'writing', 'editing', 'seo_optimization'].includes(blog.status) && resumingBlogId !== blog.id)) && (
+                              (['content_planning', 'drafting', 'editing', 'seo_optimization'].includes(blog.status) && resumingBlogId !== blog.id)) && (
                               <>
                                 {resumingBlogId === blog.id ? (
                                   <div className="text-gray-400 cursor-not-allowed" title="Resuming pipeline">
@@ -233,7 +233,7 @@ export default function Dashboard() {
                             )}
                             
                             {/* Show running indicator for active pipelines */}
-                            {(blog.status === 'content_planning' || blog.status === 'writing' || blog.status === 'editing' || blog.status === 'seo_optimization') && (
+                            {(blog.status === 'content_planning' || blog.status === 'drafting' || blog.status === 'editing' || blog.status === 'seo_optimization') && (
                               <div className="text-blue-600" title="Pipeline is running">
                                 <Clock className="h-4 w-4" />
                               </div>

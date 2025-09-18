@@ -25,7 +25,7 @@ export type BlogStatus =
   | 'pending'
   | 'topic_generation'
   | 'content_planning'
-  | 'writing'
+  | 'drafting'
   | 'editing'
   | 'seo_optimization'
   | 'completed'
