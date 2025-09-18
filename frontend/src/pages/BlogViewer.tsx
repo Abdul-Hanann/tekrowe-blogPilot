@@ -563,7 +563,7 @@ ${rtfContent.replace(/\n/g, '\\par ')}
     if (blog) {
       if (blog.status === 'completed' || blog.status === 'failed') {
         setIsPipelineRunning(false);
-      } else if (['content_planning', 'writing', 'editing', 'seo_optimization'].includes(blog.status)) {
+      } else if (['content_planning', 'drafting', 'editing', 'seo_optimization'].includes(blog.status)) {
         // Pipeline is actively running, hide resume button
         setIsPipelineRunning(true);
       }
@@ -709,7 +709,7 @@ ${rtfContent.replace(/\n/g, '\\par ')}
       'pending',
       'topic_generation',
       'content_planning',
-      'writing',
+      'drafting',
       'editing',
       'seo_optimization',
       'completed'
@@ -726,8 +726,8 @@ ${rtfContent.replace(/\n/g, '\\par ')}
         return 'Generating trending topics...';
       case 'content_planning':
         return 'Creating detailed content plan...';
-      case 'writing':
-        return 'Writing blog content...';
+      case 'drafting':
+        return 'Drafting blog content...';
       case 'editing':
         return 'Editing and refining content...';
       case 'seo_optimization':
@@ -750,7 +750,7 @@ ${rtfContent.replace(/\n/g, '\\par ')}
     const steps = [
       { key: 'topic_generation', label: 'Topic Generation', icon: FileText },
       { key: 'content_planning', label: 'Content Planning', icon: FileText },
-      { key: 'writing', label: 'Writing', icon: FileText },
+      { key: 'drafting', label: 'Drafting', icon: FileText },
       { key: 'editing', label: 'Editing', icon: Edit3 },
       { key: 'seo_optimization', label: 'SEO Optimization', icon: CheckCircle }
     ];
@@ -989,7 +989,7 @@ ${rtfContent.replace(/\n/g, '\\par ')}
                 {/* Resume button - show for failed, paused, or stopped pipelines */}
                 {(blog.status === 'failed' || 
                   blog.status === 'paused' || 
-                  (['content_planning', 'writing', 'editing', 'seo_optimization'].includes(blog.status) && !processStatus?.is_pipeline_active)) && (
+                  (['content_planning', 'drafting', 'editing', 'seo_optimization'].includes(blog.status) && !processStatus?.is_pipeline_active)) && (
                   <>
                     {resumePipelineMutation.isPending ? (
                       <div className="text-sm text-gray-600">
