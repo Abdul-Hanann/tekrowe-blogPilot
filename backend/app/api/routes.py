@@ -97,6 +97,12 @@ async def select_topic(blog_id: int, topic_selection: dict, background_tasks: Ba
         if topic_num is None:
             raise HTTPException(status_code=400, detail="topic_selection is required")
         
+        if not isinstance(topic_num, int):
+            try:
+                topic_num = int(topic_num)
+            except (ValueError, TypeError):
+                raise HTTPException(status_code=400, detail="topic_selection must be an integer")
+        
         success = ai_pipeline.select_topic(blog_id, topic_num, background_tasks)
         if success:
             return {"message": "Topic selected successfully"}
@@ -105,6 +111,8 @@ async def select_topic(blog_id: int, topic_selection: dict, background_tasks: Ba
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.error(f"Error selecting topic: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @blog_router.put("/blogs/{blog_id}/update-content")
@@ -130,7 +138,10 @@ async def update_blog_content(blog_id: int, content_update: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 @blog_router.post("/blogs/{blog_id}/resume")
-async def resume_blog_pipeline(blog_id: int, background_tasks: BackgroundTasks):
+async def resume_blog_pipeline(
+    blog_id: int, 
+    background_tasks: BackgroundTasks
+):
     """Resume the blog generation pipeline from where it left off"""
     try:
         blog = blog_service.get_blog(blog_id)
@@ -152,6 +163,8 @@ async def resume_blog_pipeline(blog_id: int, background_tasks: BackgroundTasks):
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.error(f"Error resuming pipeline: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @blog_router.post("/blogs/{blog_id}/pause")
