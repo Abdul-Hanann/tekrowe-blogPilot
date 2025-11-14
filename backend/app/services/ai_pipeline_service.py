@@ -89,7 +89,7 @@ class AIPipelineService:
         
         return topics
 
-    def select_topic(self, blog_id: int, topic_selection: int) -> bool:
+    def select_topic(self, blog_id: int, topic_selection: int, background_tasks=None) -> bool:
         """Select a topic and continue the pipeline"""
         try:
             # Get the blog
@@ -127,12 +127,26 @@ class AIPipelineService:
                 'last_activity': datetime.now()
             })
 
-            # Continue pipeline in background
-            asyncio.create_task(self._continue_pipeline(blog_id, selected_topic))
+            # Continue pipeline in background using BackgroundTasks if provided, otherwise use asyncio
+            if background_tasks:
+                background_tasks.add_task(self._continue_pipeline, blog_id, selected_topic)
+            else:
+                # Fallback for cases where background_tasks is not available
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        asyncio.create_task(self._continue_pipeline(blog_id, selected_topic))
+                    else:
+                        loop.run_until_complete(self._continue_pipeline(blog_id, selected_topic))
+                except RuntimeError:
+                    # If no event loop exists, create one
+                    asyncio.run(self._continue_pipeline(blog_id, selected_topic))
             
             return True
 
         except Exception as e:
+            import logging
+            logging.error(f"Error selecting topic for blog {blog_id}: {str(e)}")
             return False
 
     async def _continue_pipeline(self, blog_id: int, selected_topic: Dict[str, Any]):
@@ -371,7 +385,7 @@ class AIPipelineService:
                 progress_percentage=progress_percentage
             )
 
-    def resume_pipeline(self, blog_id: int) -> bool:
+    def resume_pipeline(self, blog_id: int, background_tasks=None) -> bool:
         """Resume the pipeline from where it left off for any incomplete blog"""
         try:
             # Get the blog
@@ -413,8 +427,18 @@ class AIPipelineService:
                     'last_activity': datetime.now()
                 })
                 
-                # Continue pipeline from where it left off
-                asyncio.create_task(self._continue_pipeline(blog_id, selected_topic))
+                # Continue pipeline from where it left off using BackgroundTasks if provided
+                if background_tasks:
+                    background_tasks.add_task(self._continue_pipeline, blog_id, selected_topic)
+                else:
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.create_task(self._continue_pipeline(blog_id, selected_topic))
+                        else:
+                            loop.run_until_complete(self._continue_pipeline(blog_id, selected_topic))
+                    except RuntimeError:
+                        asyncio.run(self._continue_pipeline(blog_id, selected_topic))
                 return True
                 
             elif blog.status in ['content_planning', 'writing', 'editing', 'seo_optimization']:
@@ -438,14 +462,26 @@ class AIPipelineService:
                     'last_activity': datetime.now()
                 })
                 
-                # Continue pipeline from where it left off
-                asyncio.create_task(self._continue_pipeline(blog_id, selected_topic))
+                # Continue pipeline from where it left off using BackgroundTasks if provided
+                if background_tasks:
+                    background_tasks.add_task(self._continue_pipeline, blog_id, selected_topic)
+                else:
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.create_task(self._continue_pipeline(blog_id, selected_topic))
+                        else:
+                            loop.run_until_complete(self._continue_pipeline(blog_id, selected_topic))
+                    except RuntimeError:
+                        asyncio.run(self._continue_pipeline(blog_id, selected_topic))
                 return True
                 
             else:
                 return False
                 
         except Exception as e:
+            import logging
+            logging.error(f"Error resuming pipeline for blog {blog_id}: {str(e)}")
             return False
 
     def can_resume_blog(self, blog_id: int) -> dict:

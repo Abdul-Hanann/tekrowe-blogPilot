@@ -86,14 +86,18 @@ async def generate_topics(blog_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @blog_router.post("/blogs/{blog_id}/select-topic")
-async def select_topic(blog_id: int, topic_selection: dict):
+async def select_topic(blog_id: int, topic_selection: dict, background_tasks: BackgroundTasks):
     """Select a topic for the blog"""
     try:
         blog = blog_service.get_blog(blog_id)
         if not blog:
             raise HTTPException(status_code=404, detail="Blog not found")
         
-        success = ai_pipeline.select_topic(blog_id, topic_selection.get("topic_selection"))
+        topic_num = topic_selection.get("topic_selection")
+        if topic_num is None:
+            raise HTTPException(status_code=400, detail="topic_selection is required")
+        
+        success = ai_pipeline.select_topic(blog_id, topic_num, background_tasks)
         if success:
             return {"message": "Topic selected successfully"}
         else:
@@ -126,7 +130,7 @@ async def update_blog_content(blog_id: int, content_update: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 @blog_router.post("/blogs/{blog_id}/resume")
-async def resume_blog_pipeline(blog_id: int):
+async def resume_blog_pipeline(blog_id: int, background_tasks: BackgroundTasks):
     """Resume the blog generation pipeline from where it left off"""
     try:
         blog = blog_service.get_blog(blog_id)
@@ -138,7 +142,7 @@ async def resume_blog_pipeline(blog_id: int):
             raise HTTPException(status_code=400, detail="Blog is already completed")
         
         # Attempt to resume the pipeline
-        success = ai_pipeline.resume_pipeline(blog_id)
+        success = ai_pipeline.resume_pipeline(blog_id, background_tasks)
         
         if success:
             return {"message": "Blog pipeline resumed successfully"}
