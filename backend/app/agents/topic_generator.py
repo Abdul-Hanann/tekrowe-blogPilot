@@ -1,13 +1,21 @@
 import os
 import re
+import time
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+from openai import APIConnectionError, APIError, RateLimitError
 from ddgs import DDGS
 from app.models.blog import BlogStatus
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, openai_api_key=OPENAI_API_KEY)
+llm = ChatOpenAI(
+    model="gpt-4o-mini", 
+    temperature=0.7, 
+    openai_api_key=OPENAI_API_KEY,
+    timeout=300,  # 5 minutes timeout for large content
+    max_retries=3  # Retry up to 3 times
+)
 
 def generate_trending_topics():
     """Generate trending topics using web search and AI"""
@@ -58,8 +66,22 @@ def generate_trending_topics():
         ===== END OF RAW SOURCE MATERIAL =====
     """
 
-    result = llm.invoke([{"role": "user", "content": prompt}])
-    return result.content
+    # Retry logic with exponential backoff
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            result = llm.invoke([{"role": "user", "content": prompt}])
+            return result.content
+        except (APIConnectionError, APIError, RateLimitError) as e:
+            if attempt < max_attempts - 1:
+                wait_time = (2 ** attempt) * 2  # Exponential backoff: 2s, 4s, 8s
+                print(f"API error on attempt {attempt + 1}/{max_attempts}: {str(e)}. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                raise Exception(f"Failed to generate topics after {max_attempts} attempts: {str(e)}")
+        except Exception as e:
+            # For other exceptions, don't retry
+            raise Exception(f"Error generating topics: {str(e)}")
 
 def parse_topics_from_text(content: str):
     """Parse topics from generated content"""

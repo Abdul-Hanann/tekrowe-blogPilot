@@ -226,13 +226,22 @@ class AIPipelineService:
             })
 
         except Exception as e:
-            await self._update_status(blog_id, 'failed', f"Pipeline failed: {str(e)}")
+            error_message = f"Pipeline failed: {str(e)}"
+            await self._update_status(blog_id, 'failed', error_message)
             
             # Clean up active pipeline tracking
             if blog_id in self.active_pipelines:
                 del self.active_pipelines[blog_id]
             
-            raise
+            # Update database to reflect pipeline is no longer active
+            self.blog_service.update_blog(blog_id, {
+                'is_pipeline_active': False,
+                'last_activity': datetime.now()
+            })
+            
+            # Log the error but don't re-raise to avoid "Task exception was never retrieved" warning
+            import logging
+            logging.error(f"Pipeline failed for blog {blog_id}: {error_message}")
 
     def _update_step_completion(self, blog_id: int, step: str, completed: bool):
         """Update the completion status of a specific step"""
