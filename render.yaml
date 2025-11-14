@@ -10,10 +10,11 @@ services:
       - key: PYTHON_VERSION
         value: 3.10.0
       - key: DATABASE_URL
-        value: sqlite:///blog_automation.db
+      # value: sqlite:///blog_automation.db
+        value: postgresql://blogpost_xdx4_user:Yc03a5o6J9AcaBXSwbM3OJPXsofdfEqh@dpg-d4bhe2f5r7bs739663e0-a.singapore-postgres.render.com/blogpost_xdx4
       - key: OPENAI_API_KEY
         sync: false
       - key: ENVIRONMENT
         value: production
     healthCheckPath: /docs
-    autoDeploy: true
+    autoDeploy: false  # Set to false to prevent automatic restarts on code push

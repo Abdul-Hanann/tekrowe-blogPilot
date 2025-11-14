@@ -10,8 +10,9 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
     
-    # Database
-    DATABASE_URL: str = "sqlite:///./blog_automation.db"
+    # Database - reads from DATABASE_URL env var, falls back to SQLite for local dev
+    # In production (Render), DATABASE_URL will be set to PostgreSQL connection string
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./blog_automation.db")
     
     # OpenAI
     OPENAI_API_KEY: str = ""
